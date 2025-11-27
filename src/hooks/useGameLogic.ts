@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Grid, Tile, TileType, Level } from '../types';
+import type { Grid, Tile, TileType } from '../types';
 import { BOARD_SIZE, LEVELS } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 

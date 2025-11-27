@@ -1,8 +1,9 @@
+```
 import { useState } from 'react';
 import { useGameLogic } from './hooks/useGameLogic';
 import { GameBoard } from './components/GameBoard';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TrophyIcon, StarIcon, RetryIcon, NextIcon, TrashIcon } from './components/Icons';
+import { TrophyIcon, RetryIcon, NextIcon, TrashIcon } from './components/Icons';
 
 function App() {
   const {
@@ -86,7 +87,7 @@ function App() {
               <motion.div
                 className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
                 initial={{ width: 0 }}
-                animate={{ width: `${progress}%` }}
+                animate={{ width: `${ progress }% ` }}
                 transition={{ type: 'spring', stiffness: 100 }}
               />
             </div>
