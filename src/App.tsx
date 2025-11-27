@@ -1,4 +1,4 @@
-```
+
 import { useState } from 'react';
 import { useGameLogic } from './hooks/useGameLogic';
 import { GameBoard } from './components/GameBoard';
@@ -87,7 +87,7 @@ function App() {
               <motion.div
                 className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
                 initial={{ width: 0 }}
-                animate={{ width: `${ progress }% ` }}
+                animate={{ width: `${progress}% ` }}
                 transition={{ type: 'spring', stiffness: 100 }}
               />
             </div>
