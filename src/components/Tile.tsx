@@ -184,7 +184,7 @@ export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe }
         if (tile.special === 'striped-h') {
             // Horizontal beam
             return {
-                scaleX: 5, // Reduced from 10
+                scaleX: 5,
                 scaleY: 0.5,
                 opacity: 0,
                 filter: 'brightness(2)',
@@ -194,7 +194,7 @@ export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe }
         if (tile.special === 'striped-v') {
             // Vertical beam
             return {
-                scaleY: 5, // Reduced from 10
+                scaleY: 5,
                 scaleX: 0.5,
                 opacity: 0,
                 filter: 'brightness(2)',
@@ -245,7 +245,7 @@ export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe }
                 zIndex: 1,
                 filter: isSelected ? 'brightness(1.2)' : 'brightness(1)'
             }}
-            exit={getExitAnimation()}
+            exit={getExitAnimation() as any}
             transition={{
                 type: 'spring',
                 stiffness: 500,
@@ -268,7 +268,7 @@ export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe }
             onDragStart={() => {
                 hasSwapped.current = false;
             }}
-            onDrag={(e, { offset }) => {
+            onDrag={(_e, { offset }) => {
                 if (!onSwipe || hasSwapped.current) return;
 
                 const swipeThreshold = 15;
