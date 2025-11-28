@@ -3,7 +3,7 @@ export type TileType =
     | 'lirili' | 'garamararam' | 'tralaleritos' | 'chicleteira' | 'trippi' | 'chimpanzini'
     | 'ballerinolololo' | 'bobrito' | 'bombombini' | 'boneca' | 'briibrii' | 'burbaloni'
     | 'chaimaestro' | 'cocofanto' | 'espressona' | 'frigocamelo' | 'frulifrula' | 'girafaceleste'
-    | 'laesok' | 'lavaca' | 'matteo' | 'orangutini' | 'orcalero' | 'rhinotoasterino'
+    | 'laesok' | 'matteo' | 'orangutini' | 'orcalero' | 'rhinotoasterino'
     | 'sigmaboy' | 'tobtobi' | 'tracotucotulu' | 'zibrazubra';
 
 export type SpecialType = 'striped-h' | 'striped-v' | 'bomb' | 'mega-bomb' | null;
@@ -31,7 +31,7 @@ const ALL_CHARACTERS: TileType[] = [
     'lirili', 'garamararam', 'tralaleritos', 'chicleteira', 'trippi', 'chimpanzini',
     'ballerinolololo', 'bobrito', 'bombombini', 'boneca', 'briibrii', 'burbaloni',
     'chaimaestro', 'cocofanto', 'espressona', 'frigocamelo', 'frulifrula', 'girafaceleste',
-    'laesok', 'lavaca', 'matteo', 'orangutini', 'orcalero', 'rhinotoasterino',
+    'laesok', 'matteo', 'orangutini', 'orcalero', 'rhinotoasterino',
     'sigmaboy', 'tobtobi', 'tracotucotulu', 'zibrazubra'
 ];
 
@@ -56,10 +56,10 @@ const generateLevels = (): Level[] => {
         const scoreMultiplier = Math.pow(1.15, i - 1); // 15% increase per level
         const targetScore = Math.floor(baseScore * scoreMultiplier);
 
-        // Moves decrease gradually but not too much
-        const baseMoves = 35;
-        const moveReduction = Math.floor((i - 1) / 5); // Reduce 1 move every 5 levels
-        const moves = Math.max(15, baseMoves - moveReduction); // Minimum 15 moves
+        // Moves INCREASE gradually to help with harder levels
+        const baseMoves = 20;
+        const moveIncrease = Math.floor((i - 1) / 2); // Add 1 move every 2 levels
+        const moves = Math.min(60, baseMoves + moveIncrease); // Cap at 60 moves
 
         levels.push({
             number: i,
@@ -101,7 +101,6 @@ export const CHARACTER_NAMES: Record<TileType, string> = {
     frulifrula: 'Frulli Frulla',
     girafaceleste: 'Giraffa Celeste',
     laesok: 'La Esok Sikola',
-    lavaca: 'La Vaca Saturno',
     matteo: 'Matteooooo',
     orangutini: 'Orangutini Ananasini',
     orcalero: 'Orcalero Orcala',
