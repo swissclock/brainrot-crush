@@ -36,11 +36,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({ grid, selectedTile, onTile
     }, [selectedTile, onTileClick]);
 
     return (
-        <div className="relative bg-black/40 backdrop-blur-md rounded-2xl p-3 border-2 border-purple-500/30 shadow-2xl">
+        <div className="relative bg-black/40 backdrop-blur-md rounded-2xl p-2 border-2 border-purple-500/30 shadow-2xl w-full max-w-[520px] aspect-square mx-auto">
             <div
                 ref={boardRef}
-                className="relative grid grid-cols-8 gap-1.5 touch-none"
-                style={{ width: 'min(90vw, 500px)', height: 'min(90vw, 500px)' }}
+                className="relative grid grid-cols-8 gap-1.5 touch-none w-full h-full"
+                style={{
+                    gridTemplateRows: 'repeat(8, 1fr)',
+                    gridTemplateColumns: 'repeat(8, 1fr)'
+                }}
             >
                 {/* Background Grid (Empty Slots) */}
                 {Array.from({ length: 64 }).map((_, i) => (
