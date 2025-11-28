@@ -35,7 +35,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-800 via-slate-800 to-gray-900 flex flex-col items-center justify-center p-4 overflow-hidden">
+    <div className="min-h-[100dvh] bg-gradient-to-br from-purple-800 via-slate-800 to-gray-900 flex flex-col items-center justify-center p-2 md:p-4 overflow-hidden">
       {/* Animated background particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {[...Array(20)].map((_, i) => (
@@ -62,7 +62,7 @@ function App() {
       <div className="relative z-10 w-full max-w-[550px]">
         {/* Header */}
         <motion.div
-          className="mb-6 text-center"
+          className="mb-3 md:mb-6 text-center"
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 200 }}
@@ -73,7 +73,7 @@ function App() {
         </motion.div>
 
         {/* Level and Stats */}
-        <div className="flex flex-col gap-3 mb-4 px-2">
+        <div className="flex flex-col gap-2 md:gap-3 mb-2 md:mb-4 px-2">
           {/* Level indicator */}
           <motion.div
             className="bg-gradient-to-r from-purple-600/30 to-pink-600/30 backdrop-blur-md rounded-xl p-3 border border-purple-400/30"
