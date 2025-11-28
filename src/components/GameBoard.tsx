@@ -39,26 +39,35 @@ export const GameBoard: React.FC<GameBoardProps> = ({ grid, selectedTile, onTile
         <div className="relative bg-black/40 backdrop-blur-md rounded-2xl p-3 border-2 border-purple-500/30 shadow-2xl">
             <div
                 ref={boardRef}
-                className="grid grid-cols-8 gap-1.5 touch-none"
+                className="relative grid grid-cols-8 gap-1.5 touch-none"
                 style={{ width: 'min(90vw, 500px)', height: 'min(90vw, 500px)' }}
             >
-                {grid.map((row, r) => (
-                    row.map((tile, c) => (
-                        <div key={`${r}-${c}`} className="relative w-full h-full">
-                            <AnimatePresence mode="popLayout">
-                                {tile && (
-                                    <Tile
-                                        key={tile.id}
-                                        tile={tile}
-                                        isSelected={selectedTile?.r === r && selectedTile?.c === c}
-                                        onClick={() => onTileClick(r, c)}
-                                        onSwipe={(direction) => handleSwipe(r, c, direction)}
-                                    />
-                                )}
-                            </AnimatePresence>
-                        </div>
-                    ))
+                {/* Background Grid (Empty Slots) */}
+                {Array.from({ length: 64 }).map((_, i) => (
+                    <div key={i} className="w-full h-full bg-white/5 rounded-2xl" />
                 ))}
+
+                {/* Tiles Layer - Rendered as a flat list for Framer Motion layout animations */}
+                <AnimatePresence mode="popLayout">
+                    {grid.flatMap((row, r) =>
+                        row.map((tile, c) =>
+                            tile ? (
+                                <Tile
+                                    key={tile.id}
+                                    tile={tile}
+                                    isSelected={selectedTile?.r === r && selectedTile?.c === c}
+                                    onClick={() => onTileClick(r, c)}
+                                    onSwipe={(direction) => handleSwipe(r, c, direction)}
+                                    style={{
+                                        gridColumn: c + 1,
+                                        gridRow: r + 1,
+                                        zIndex: selectedTile?.r === r && selectedTile?.c === c ? 50 : 10
+                                    }}
+                                />
+                            ) : null
+                        )
+                    )}
+                </AnimatePresence>
             </div>
         </div>
     );
