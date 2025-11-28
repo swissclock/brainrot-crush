@@ -138,7 +138,6 @@ export const CHARACTER_EMOJI: Record<TileType, string> = {
     frulifrula: '🍓',
     girafaceleste: '🦒',
     laesok: '🏫',
-    lavaca: '🐄',
     matteo: '👨',
     orangutini: '🦧',
     orcalero: '🐋',
