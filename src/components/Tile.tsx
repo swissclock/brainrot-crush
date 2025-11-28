@@ -137,23 +137,23 @@ export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe }
             return (
                 <div className="absolute inset-0 border-[3px] border-purple-400/60 rounded-2xl overflow-hidden">
                     <motion.div
-                        className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                        className="absolute bottom-1 right-1 flex items-center justify-center pointer-events-none"
                         animate={{ scale: [1, 1.1, 1] }}
                         transition={{ duration: 0.8, repeat: Infinity, ease: 'easeInOut' }}
                     >
-                        <BombIcon className="w-12 h-12 drop-shadow-[0_0_10px_rgba(0,0,0,0.8)]" />
+                        <BombIcon className="w-8 h-8 drop-shadow-[0_0_5px_rgba(0,0,0,0.8)] opacity-90" />
                     </motion.div>
                 </div>
             );
         } else if (tile.special === 'mega-bomb') {
             return (
-                <div className="absolute inset-0 border-[4px] border-red-500/80 rounded-2xl overflow-hidden shadow-[0_0_20px_rgba(255,0,0,0.5)]">
+                <div className="absolute inset-0 border-[4px] border-red-500/80 rounded-2xl overflow-hidden shadow-[0_0_20px_rgba(255,0,0,0.3)]">
                     <motion.div
                         className="absolute bottom-1 right-1 pointer-events-none z-20"
-                        animate={{ scale: [1, 1.3, 1], rotate: [0, 10, -10, 0] }}
+                        animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
                         transition={{ duration: 0.5, repeat: Infinity }}
                     >
-                        <FireIcon className="w-10 h-10 drop-shadow-[0_0_15px_rgba(255,69,0,1)]" />
+                        <FireIcon className="w-8 h-8 drop-shadow-[0_0_10px_rgba(255,69,0,0.8)] opacity-90" />
                     </motion.div>
                 </div>
             );

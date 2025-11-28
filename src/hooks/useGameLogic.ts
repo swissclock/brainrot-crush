@@ -392,6 +392,7 @@ export const useGameLogic = () => {
             setGrid(testGrid); // No swap needed visually, just trigger effect
             setIsProcessing(true);
             setLastMoveScore(0);
+            setMoves(m => m - 1); // Valid move
 
             // Handle combo logic
             const comboRemoves: { r: number; c: number }[] = [];
@@ -405,6 +406,7 @@ export const useGameLogic = () => {
                     }
                 }
                 setFeedbackMessage('💥 SUPERNOVA!');
+                setTimeout(() => setFeedbackMessage(null), 3000);
             }
             // 2. Stripe + Stripe = Cross (Row + Col)
             else if ((tile1.special === 'striped-h' || tile1.special === 'striped-v') &&
@@ -414,6 +416,7 @@ export const useGameLogic = () => {
                 for (let r = 0; r < BOARD_SIZE; r++) comboRemoves.push({ r, c: c1 }); // Col 1
                 for (let r = 0; r < BOARD_SIZE; r++) comboRemoves.push({ r, c: c2 }); // Col 2
                 setFeedbackMessage('✨ CROSS BLAST!');
+                setTimeout(() => setFeedbackMessage(null), 2000);
             }
             // 3. Stripe + Bomb = 3 Rows + 3 Cols
             else if ((tile1.special?.includes('striped') && tile2.special?.includes('bomb')) ||
@@ -425,6 +428,7 @@ export const useGameLogic = () => {
                     for (let r = 0; r < BOARD_SIZE; r++) comboRemoves.push({ r, c });
                 }
                 setFeedbackMessage('🚀 MEGA BEAM!');
+                setTimeout(() => setFeedbackMessage(null), 2000);
             }
 
             // Execute combo removal
@@ -457,6 +461,7 @@ export const useGameLogic = () => {
             setGrid(testGrid);
             setIsProcessing(true);
             setLastMoveScore(0);
+            setMoves(m => m - 1); // Valid move
         } else {
             // Revert if no match
             setGrid(prev => {
@@ -491,7 +496,7 @@ export const useGameLogic = () => {
 
             if (isAdjacent) {
                 swapTiles(selectedR, selectedC, r, c);
-                setMoves(m => m - 1);
+                // setMoves removed from here, moved to swapTiles
                 setSelectedTile(null);
             } else {
                 setSelectedTile({ r, c });
