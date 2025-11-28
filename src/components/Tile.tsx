@@ -79,9 +79,10 @@ interface TileProps {
     isSelected: boolean;
     onClick: () => void;
     onSwipe?: (direction: 'up' | 'down' | 'left' | 'right') => void;
+    style?: React.CSSProperties;
 }
 
-export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe }) => {
+export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe, style }) => {
     // Track if a swap has already been triggered for the current drag gesture
     const hasSwapped = React.useRef(false);
 
@@ -285,6 +286,7 @@ export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe }
                     }
                 }
             }}
+            style={style}
             className={`
         w-full h-full absolute top-0 left-0 cursor-pointer rounded-2xl 
         flex items-center justify-center touch-none select-none
