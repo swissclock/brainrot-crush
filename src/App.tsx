@@ -35,7 +35,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-slate-900 to-black flex flex-col items-center justify-center p-4 overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-purple-800 via-slate-800 to-gray-900 flex flex-col items-center justify-center p-4 overflow-hidden">
       {/* Animated background particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {[...Array(20)].map((_, i) => (

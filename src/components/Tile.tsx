@@ -29,7 +29,6 @@ import frigocamelo from '../assets/frigocamelo_bg.png';
 import frulifrula from '../assets/frulifrula_bg.png';
 import girafaceleste from '../assets/girafaceleste_bg.png';
 import laesok from '../assets/laesoksikola_bg.png';
-import lavaca from '../assets/lavacasaturnosaturnita_bg.png';
 import matteo from '../assets/matteooooooooooooo_bg.png';
 import orangutini from '../assets/orangutiniananasini_bg.png';
 import orcalero from '../assets/orcaleroorcala_bg.png';
@@ -65,7 +64,6 @@ const CHARACTER_IMAGES = {
     frulifrula,
     girafaceleste,
     laesok,
-    lavaca,
     matteo,
     orangutini,
     orcalero,
@@ -237,8 +235,9 @@ export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe }
         <motion.div
             layout
             layoutId={tile.id}
-            initial={{ scale: 0, opacity: 0 }}
+            initial={{ y: -50, opacity: 0, scale: 0.5 }} // Falling animation
             animate={{
+                y: 0,
                 scale: 1,
                 opacity: 1,
                 rotate: 0,
