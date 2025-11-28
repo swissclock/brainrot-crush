@@ -288,7 +288,7 @@ export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe, 
             }}
             style={style}
             className={`
-        w-full h-full absolute top-0 left-0 cursor-pointer rounded-2xl 
+        w-full h-full relative cursor-pointer rounded-2xl 
         flex items-center justify-center touch-none select-none
         ${getSpecialStyle() || getCharacterBackground()}
         ${getSpecialGlow()}
