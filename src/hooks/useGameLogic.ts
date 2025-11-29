@@ -173,22 +173,35 @@ export const useGameLogic = () => {
             }
         }
 
+        // Fill empty spaces
+        let nullsBeforeFill = 0;
         for (let r = 0; r < BOARD_SIZE; r++) {
             for (let c = 0; c < BOARD_SIZE; c++) {
                 if (!newGrid[r][c]) {
+                    nullsBeforeFill++;
                     newGrid[r][c] = generateRandomTile(currentLevel.characters);
                 }
             }
         }
+
+        if (nullsBeforeFill > 0) {
+            // console.log(`[applyGravity] Filled ${nullsBeforeFill} null tiles`);
+        }
+
+        // Verify no null tiles remain
+        const nullCount = newGrid.flat().filter(t => !t).length;
+        if (nullCount > 0) {
+            console.error(`WARNING: ${nullCount} null tiles remain after applyGravity!`);
+        }
+
         return newGrid;
     };
 
-    // Recursive function to activate special tiles and handle chain reactions
     const activateSpecialTile = (
         currentGrid: Grid,
         r: number,
         c: number,
-        processed: Set<string>
+        processed: Set<string> = new Set()
     ): { r: number; c: number }[] => {
         const key = `${r},${c}`;
         if (processed.has(key)) return [];
@@ -197,16 +210,19 @@ export const useGameLogic = () => {
         const tile = currentGrid[r][c];
         if (!tile || !tile.special) return [{ r, c }];
 
-        let toRemove: { r: number; c: number }[] = [{ r, c }];
+        const toRemove: { r: number; c: number }[] = [{ r, c }];
 
-        // Helper to add position and recurse if it's a special tile
         const addAndRecurse = (nr: number, nc: number) => {
             if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE) {
-                const targetTile = currentGrid[nr][nc];
-                if (targetTile && targetTile.special && !processed.has(`${nr},${nc}`)) {
-                    toRemove.push(...activateSpecialTile(currentGrid, nr, nc, processed));
-                } else {
-                    toRemove.push({ r: nr, c: nc });
+                const targetKey = `${nr},${nc}`;
+                if (!processed.has(targetKey)) {
+                    const targetTile = currentGrid[nr][nc];
+                    if (targetTile?.special) {
+                        toRemove.push(...activateSpecialTile(currentGrid, nr, nc, processed));
+                    } else {
+                        processed.add(targetKey);
+                        toRemove.push({ r: nr, c: nc });
+                    }
                 }
             }
         };
@@ -216,16 +232,16 @@ export const useGameLogic = () => {
         } else if (tile.special === 'striped-v') {
             for (let row = 0; row < BOARD_SIZE; row++) addAndRecurse(row, c);
         } else if (tile.special === 'bomb') {
-            // Bomb radius: 1 tile around
             for (let dr = -1; dr <= 1; dr++) {
                 for (let dc = -1; dc <= 1; dc++) {
+                    if (dr === 0 && dc === 0) continue;
                     addAndRecurse(r + dr, c + dc);
                 }
             }
         } else if (tile.special === 'mega-bomb') {
-            // Mega Bomb radius: 2 tiles around
             for (let dr = -2; dr <= 2; dr++) {
                 for (let dc = -2; dc <= 2; dc++) {
+                    if (dr === 0 && dc === 0) continue;
                     addAndRecurse(r + dr, c + dc);
                 }
             }
@@ -237,11 +253,13 @@ export const useGameLogic = () => {
     useEffect(() => {
         const timer = setTimeout(() => {
             const matches = findMatches(grid);
+            // console.log(`[useEffect] Found ${matches.length} matches, isProcessing: ${isProcessing}`);
 
             if (matches.length > 0) {
+                // console.log('[useEffect] Processing matches...');
                 setIsProcessing(true);
 
-                // Determine special tile type creation
+                // Determine special tile type
                 const hasLT = matches.some(m => m.isLT);
                 const match6 = matches.find(m => m.count >= 6);
                 const match5 = matches.find(m => m.count === 5);
@@ -273,20 +291,11 @@ export const useGameLogic = () => {
 
                 // First, add all normal match tiles
                 matches.forEach(m => {
-                    // For each tile in the match
-                    if (m.horizontal) {
-                        for (let c = m.c; c < m.c + m.count; c++) {
-                            allRemoves.push({ r: m.r, c });
-                        }
-                    } else {
-                        for (let r = m.r; r < m.r + m.count; r++) {
-                            allRemoves.push({ r, c: m.c });
-                        }
-                    }
+                    // Each match entry represents a single tile, not a range
+                    allRemoves.push({ r: m.r, c: m.c });
                 });
 
                 // Then check if any of these matched tiles were special and activate them
-                // We do this after collecting all match positions to handle chain reactions correctly
                 const uniqueMatchPositions = Array.from(new Set(allRemoves.map(p => `${p.r},${p.c}`)))
                     .map(s => {
                         const [r, c] = s.split(',').map(Number);
@@ -300,7 +309,6 @@ export const useGameLogic = () => {
                         allRemoves.push(...specialEffects);
                     }
                 });
-
                 const uniqueRemoves = Array.from(
                     new Set(allRemoves.map(m => `${m.r},${m.c}`))
                 ).map(s => {
@@ -308,12 +316,9 @@ export const useGameLogic = () => {
                     return { r, c };
                 });
 
-                // Calculate Score - 10 points per tile, plus bonuses
+                // Calculate Score
                 const totalRemoved = uniqueRemoves.length;
-                let extraPoints = totalRemoved * 10;
-
-                // Combo multiplier
-                extraPoints = Math.floor(extraPoints * (1 + combo * 0.1));
+                let extraPoints = Math.floor(totalRemoved * 10 * (1 + combo * 0.1));
 
                 if (match6) extraPoints += 500;
                 else if (hasLT) extraPoints += 300;
@@ -331,7 +336,7 @@ export const useGameLogic = () => {
                 } else if (hasLT) {
                     setFeedbackMessage('⭐ L-SHAPE BONUS!');
                     setTimeout(() => setFeedbackMessage(null), 2000);
-                } else if (extraPoints >= 500) { // Increased threshold for "Amazing"
+                } else if (extraPoints >= 200) {
                     setFeedbackMessage('🔥 AMAZING!');
                     setTimeout(() => setFeedbackMessage(null), 2000);
                 } else if (combo >= 3) {
@@ -350,32 +355,41 @@ export const useGameLogic = () => {
                     if (specialTilePos && newGrid[specialTilePos.r][specialTilePos.c] === null) {
                         newGrid[specialTilePos.r][specialTilePos.c] = {
                             id: uuidv4(),
-                            type: currentLevel.characters[0],
+                            type: currentLevel.characters[0], // Default type, will be overwritten if needed or random
                             special: specialTilePos.type,
                         };
-                        // Try to preserve the type of the tile that created the special tile if possible
-                        // But since it's null now, we might need to look at the original grid or just pick random
                         newGrid[specialTilePos.r][specialTilePos.c]!.type =
                             grid[specialTilePos.r][specialTilePos.c]?.type || currentLevel.characters[0];
                     }
 
                     const filledGrid = applyGravity(newGrid);
+                    //
                     return filledGrid;
                 });
+
+                // Reset isProcessing in the next tick to allow cascading matches to be detected
+                // Using setTimeout(0) ensures this happens after the grid state update completes
+                setTimeout(() => {
+                    //
+                    setIsProcessing(false);
+                }, 0);
             } else {
                 // No matches found. Check for deadlock.
                 if (grid.length > 0 && !hasLegalMoves(grid)) {
+                    //
                     reshuffleGrid();
                 } else {
+                    // console.log('[useEffect] No matches found - resetting isProcessing to false');
                     setIsProcessing(false);
                     setCombo(0);
                 }
             }
         }, 300);
 
-        return () => clearTimeout(timer);
-    }, [grid, currentLevel.characters]);
-    // Removed isProcessing and combo from dependencies to prevent loops
+        return () => {
+            clearTimeout(timer);
+        };
+    }, [grid, currentLevel.characters]); // Removed isProcessing and combo from dependencies to prevent loops
 
     useEffect(() => {
         if (score >= currentLevel.targetScore && !showLevelComplete) {
@@ -462,12 +476,13 @@ export const useGameLogic = () => {
         const matches = findMatches(testGrid);
 
         if (matches.length > 0) {
-            setGrid(testGrid);
+            setGrid([...testGrid]); // Force new reference
             setIsProcessing(true);
             setLastMoveScore(0);
             setMoves(m => m - 1); // Valid move
         } else {
             // Revert if no match
+            setIsProcessing(true); // Block input during revert animation
             setGrid(prev => {
                 const newGrid = [...prev.map(row => [...row])];
                 newGrid[r1][c1] = tile2;
@@ -482,6 +497,7 @@ export const useGameLogic = () => {
                     newGrid[r2][c2] = tile2;
                     return newGrid;
                 });
+                setIsProcessing(false); // Unblock after revert
             }, 200);
         }
     }, [grid]);

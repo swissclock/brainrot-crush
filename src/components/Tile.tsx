@@ -167,7 +167,6 @@ export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe, 
             return {
                 scale: 1.5,
                 opacity: 0,
-                filter: 'brightness(2)', // Removed blur for performance
                 transition: { duration: 0.4, ease: 'circOut' }
             };
         }
@@ -176,7 +175,6 @@ export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe, 
             return {
                 scale: 1.2,
                 opacity: 0,
-                filter: 'brightness(1.5)',
                 transition: { duration: 0.3, ease: 'easeOut' }
             };
         }
@@ -186,7 +184,6 @@ export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe, 
                 scaleX: 5,
                 scaleY: 0.5,
                 opacity: 0,
-                filter: 'brightness(2)',
                 transition: { duration: 0.3, ease: 'easeIn' }
             };
         }
@@ -196,7 +193,6 @@ export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe, 
                 scaleY: 5,
                 scaleX: 0.5,
                 opacity: 0,
-                filter: 'brightness(2)',
                 transition: { duration: 0.3, ease: 'easeIn' }
             };
         }
@@ -235,8 +231,7 @@ export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe, 
     return (
         <motion.div
             layout
-            layoutId={tile.id}
-            initial={{ y: -50, opacity: 0, scale: 0.5 }} // Falling animation
+            initial={{ y: -50, opacity: 1, scale: 0.5, filter: 'brightness(1)' }} // Falling animation
             animate={{
                 y: 0,
                 scale: 1,
@@ -255,7 +250,8 @@ export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe, 
             whileHover={{
                 scale: 1.05,
                 filter: 'brightness(1.1)',
-                zIndex: 20
+                zIndex: 20,
+                transition: { duration: 0.2 }
             }}
             whileTap={{ scale: 0.95 }}
             drag={!!onSwipe}
