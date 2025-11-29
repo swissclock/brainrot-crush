@@ -183,75 +183,50 @@ export const useGameLogic = () => {
         return newGrid;
     };
 
-    const activateSpecialTile = (grid: Grid, r: number, c: number): { r: number; c: number }[] => {
-        const tile = grid[r][c];
-        if (!tile || !tile.special) return [];
+    // Recursive function to activate special tiles and handle chain reactions
+    const activateSpecialTile = (
+        currentGrid: Grid,
+        r: number,
+        c: number,
+        processed: Set<string>
+    ): { r: number; c: number }[] => {
+        const key = `${r},${c}`;
+        if (processed.has(key)) return [];
+        processed.add(key);
 
-        const toRemove: { r: number; c: number }[] = [];
+        const tile = currentGrid[r][c];
+        if (!tile || !tile.special) return [{ r, c }];
 
-        // Check for special tile combinations
-        const adjacentSpecials: { r: number; c: number; tile: Tile }[] = [];
-        const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+        let toRemove: { r: number; c: number }[] = [{ r, c }];
 
-        for (const [dr, dc] of directions) {
-            const nr = r + dr;
-            const nc = c + dc;
+        // Helper to add position and recurse if it's a special tile
+        const addAndRecurse = (nr: number, nc: number) => {
             if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE) {
-                const adjacentTile = grid[nr][nc];
-                if (adjacentTile?.special) {
-                    adjacentSpecials.push({ r: nr, c: nc, tile: adjacentTile });
+                const targetTile = currentGrid[nr][nc];
+                if (targetTile && targetTile.special && !processed.has(`${nr},${nc}`)) {
+                    toRemove.push(...activateSpecialTile(currentGrid, nr, nc, processed));
+                } else {
+                    toRemove.push({ r: nr, c: nc });
                 }
             }
-        }
+        };
 
-        // STRIPE + BOMB COMBO = CLEAR ENTIRE BOARD!
-        const isStriped = tile.special === 'striped-h' || tile.special === 'striped-v';
-        const isBomb = tile.special === 'bomb' || tile.special === 'mega-bomb';
-
-        for (const adjacent of adjacentSpecials) {
-            const adjIsStriped = adjacent.tile.special === 'striped-h' || adjacent.tile.special === 'striped-v';
-            const adjIsBomb = adjacent.tile.special === 'bomb' || adjacent.tile.special === 'mega-bomb';
-
-            if ((isStriped && adjIsBomb) || (isBomb && adjIsStriped)) {
-                // MEGA COMBO! Clear entire board
-                for (let row = 0; row < BOARD_SIZE; row++) {
-                    for (let col = 0; col < BOARD_SIZE; col++) {
-                        toRemove.push({ r: row, c: col });
-                    }
-                }
-                setFeedbackMessage('MEGA COMBO! BOARD CLEAR!');
-                setTimeout(() => setFeedbackMessage(null), 3000);
-                return toRemove;
-            }
-        }
-
-        // Normal special tile behavior
         if (tile.special === 'striped-h') {
-            for (let col = 0; col < BOARD_SIZE; col++) {
-                toRemove.push({ r, c: col });
-            }
+            for (let col = 0; col < BOARD_SIZE; col++) addAndRecurse(r, col);
         } else if (tile.special === 'striped-v') {
-            for (let row = 0; row < BOARD_SIZE; row++) {
-                toRemove.push({ r: row, c });
-            }
+            for (let row = 0; row < BOARD_SIZE; row++) addAndRecurse(row, c);
         } else if (tile.special === 'bomb') {
-            const targetType = tile.type;
-            for (let row = 0; row < BOARD_SIZE; row++) {
-                for (let col = 0; col < BOARD_SIZE; col++) {
-                    if (grid[row][col]?.type === targetType) {
-                        toRemove.push({ r: row, c: col });
-                    }
+            // Bomb radius: 1 tile around
+            for (let dr = -1; dr <= 1; dr++) {
+                for (let dc = -1; dc <= 1; dc++) {
+                    addAndRecurse(r + dr, c + dc);
                 }
             }
         } else if (tile.special === 'mega-bomb') {
-            // Clear 3x3 area around the tile
-            for (let dr = -1; dr <= 1; dr++) {
-                for (let dc = -1; dc <= 1; dc++) {
-                    const nr = r + dr;
-                    const nc = c + dc;
-                    if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE) {
-                        toRemove.push({ r: nr, c: nc });
-                    }
+            // Mega Bomb radius: 2 tiles around
+            for (let dr = -2; dr <= 2; dr++) {
+                for (let dc = -2; dc <= 2; dc++) {
+                    addAndRecurse(r + dr, c + dc);
                 }
             }
         }
@@ -266,7 +241,7 @@ export const useGameLogic = () => {
             if (matches.length > 0) {
                 setIsProcessing(true);
 
-                // Determine special tile type
+                // Determine special tile type creation
                 const hasLT = matches.some(m => m.isLT);
                 const match6 = matches.find(m => m.count >= 6);
                 const match5 = matches.find(m => m.count === 5);
@@ -292,17 +267,40 @@ export const useGameLogic = () => {
                 }
 
                 // Calculate removals and score
-                const specialRemoves: { r: number; c: number }[] = [];
+                const processedSpecials = new Set<string>();
+                const allRemoves: { r: number; c: number }[] = [];
                 const tempGrid = grid.map(row => [...row]);
 
-                matches.forEach(({ r, c }) => {
-                    const tile = tempGrid[r][c];
-                    if (tile?.special) {
-                        specialRemoves.push(...activateSpecialTile(tempGrid, r, c));
+                // First, add all normal match tiles
+                matches.forEach(m => {
+                    // For each tile in the match
+                    if (m.horizontal) {
+                        for (let c = m.c; c < m.c + m.count; c++) {
+                            allRemoves.push({ r: m.r, c });
+                        }
+                    } else {
+                        for (let r = m.r; r < m.r + m.count; r++) {
+                            allRemoves.push({ r, c: m.c });
+                        }
                     }
                 });
 
-                const allRemoves = [...matches, ...specialRemoves];
+                // Then check if any of these matched tiles were special and activate them
+                // We do this after collecting all match positions to handle chain reactions correctly
+                const uniqueMatchPositions = Array.from(new Set(allRemoves.map(p => `${p.r},${p.c}`)))
+                    .map(s => {
+                        const [r, c] = s.split(',').map(Number);
+                        return { r, c };
+                    });
+
+                uniqueMatchPositions.forEach(({ r, c }) => {
+                    const tile = tempGrid[r][c];
+                    if (tile && tile.special) {
+                        const specialEffects = activateSpecialTile(tempGrid, r, c, processedSpecials);
+                        allRemoves.push(...specialEffects);
+                    }
+                });
+
                 const uniqueRemoves = Array.from(
                     new Set(allRemoves.map(m => `${m.r},${m.c}`))
                 ).map(s => {
@@ -310,9 +308,12 @@ export const useGameLogic = () => {
                     return { r, c };
                 });
 
-                // Calculate Score
+                // Calculate Score - 10 points per tile, plus bonuses
                 const totalRemoved = uniqueRemoves.length;
-                let extraPoints = Math.floor(totalRemoved * 10 * (1 + combo * 0.1));
+                let extraPoints = totalRemoved * 10;
+
+                // Combo multiplier
+                extraPoints = Math.floor(extraPoints * (1 + combo * 0.1));
 
                 if (match6) extraPoints += 500;
                 else if (hasLT) extraPoints += 300;
@@ -330,7 +331,7 @@ export const useGameLogic = () => {
                 } else if (hasLT) {
                     setFeedbackMessage('⭐ L-SHAPE BONUS!');
                     setTimeout(() => setFeedbackMessage(null), 2000);
-                } else if (extraPoints >= 200) {
+                } else if (extraPoints >= 500) { // Increased threshold for "Amazing"
                     setFeedbackMessage('🔥 AMAZING!');
                     setTimeout(() => setFeedbackMessage(null), 2000);
                 } else if (combo >= 3) {
@@ -349,9 +350,11 @@ export const useGameLogic = () => {
                     if (specialTilePos && newGrid[specialTilePos.r][specialTilePos.c] === null) {
                         newGrid[specialTilePos.r][specialTilePos.c] = {
                             id: uuidv4(),
-                            type: currentLevel.characters[0], // Default type, will be overwritten if needed or random
+                            type: currentLevel.characters[0],
                             special: specialTilePos.type,
                         };
+                        // Try to preserve the type of the tile that created the special tile if possible
+                        // But since it's null now, we might need to look at the original grid or just pick random
                         newGrid[specialTilePos.r][specialTilePos.c]!.type =
                             grid[specialTilePos.r][specialTilePos.c]?.type || currentLevel.characters[0];
                     }
@@ -371,7 +374,8 @@ export const useGameLogic = () => {
         }, 300);
 
         return () => clearTimeout(timer);
-    }, [grid, currentLevel.characters]); // Removed isProcessing and combo from dependencies to prevent loops
+    }, [grid, currentLevel.characters]);
+    // Removed isProcessing and combo from dependencies to prevent loops
 
     useEffect(() => {
         if (score >= currentLevel.targetScore && !showLevelComplete) {

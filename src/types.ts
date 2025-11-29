@@ -53,12 +53,12 @@ const generateLevels = (): Level[] => {
 
         // Progressive difficulty scaling
         const baseScore = 200;
-        const scoreMultiplier = Math.pow(1.15, i - 1); // 15% increase per level
+        const scoreMultiplier = Math.pow(1.08, i - 1); // Reduced from 15% to 8% increase per level
         const targetScore = Math.floor(baseScore * scoreMultiplier);
 
         // Moves INCREASE gradually to help with harder levels
-        const baseMoves = 20;
-        const moveIncrease = Math.floor((i - 1) / 2); // Add 1 move every 2 levels
+        const baseMoves = 25; // Increased base moves from 20 to 25
+        const moveIncrease = Math.floor((i - 1) / 1.5); // Add 1 move every 1.5 levels (faster increase)
         const moves = Math.min(60, baseMoves + moveIncrease); // Cap at 60 moves
 
         levels.push({
