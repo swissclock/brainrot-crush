@@ -94,7 +94,7 @@ export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe, 
         } else if (tile.special === 'bomb') {
             return 'bg-gradient-to-br from-purple-500/30 via-pink-500/30 to-purple-500/30';
         } else if (tile.special === 'mega-bomb') {
-            return 'bg-gradient-to-br from-red-600/40 via-orange-500/40 to-yellow-400/40 animate-pulse';
+            return 'bg-gradient-to-br from-red-600/40 via-orange-500/40 to-yellow-400/40';
         }
         return 'bg-white/5'; // Subtle glass background for normal tiles
     };
@@ -271,9 +271,10 @@ export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe, 
             onDrag={(_e, { offset }) => {
                 if (!onSwipe || hasSwapped.current) return;
 
-                const swipeThreshold = 15;
+                const swipeThreshold = 10; // Lower threshold for better sensitivity
                 const { x, y } = offset;
 
+                // Prioritize the dominant axis
                 if (Math.abs(x) > Math.abs(y)) {
                     if (Math.abs(x) > swipeThreshold) {
                         hasSwapped.current = true;
