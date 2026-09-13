@@ -28,11 +28,23 @@ const createInitialGrid = (availableTypes: TileType[]): Grid => {
     return grid;
 };
 
-export const useGameLogic = () => {
-    const [currentLevelIndex, setCurrentLevelIndex] = useState(() => {
+// Read the saved level defensively: localStorage is user-writable and survives reloads,
+// so a corrupted or out-of-range value would otherwise leave the game permanently blank.
+const loadSavedLevelIndex = (): number => {
+    try {
         const saved = localStorage.getItem('brainrot_level');
-        return saved ? parseInt(saved, 10) : 0;
-    });
+        if (!saved) return 0;
+        const parsed = Number.parseInt(saved, 10);
+        if (!Number.isInteger(parsed) || parsed < 0 || parsed >= LEVELS.length) return 0;
+        return parsed;
+    } catch {
+        // Private browsing or blocked site data: fall back to level 1.
+        return 0;
+    }
+};
+
+export const useGameLogic = () => {
+    const [currentLevelIndex, setCurrentLevelIndex] = useState(loadSavedLevelIndex);
     const [score, setScore] = useState(0);
     const [moves, setMoves] = useState(0);
     const [grid, setGrid] = useState<Grid>([]);
@@ -46,7 +58,11 @@ export const useGameLogic = () => {
     const currentLevel = LEVELS[currentLevelIndex];
 
     useEffect(() => {
-        localStorage.setItem('brainrot_level', currentLevelIndex.toString());
+        try {
+            localStorage.setItem('brainrot_level', currentLevelIndex.toString());
+        } catch {
+            // Storage unavailable (private browsing, quota, blocked): progress just won't persist.
+        }
     }, [currentLevelIndex]);
 
     useEffect(() => {
@@ -541,7 +557,11 @@ export const useGameLogic = () => {
     };
 
     const resetProgress = () => {
-        localStorage.removeItem('brainrot_level');
+        try {
+            localStorage.removeItem('brainrot_level');
+        } catch {
+            // Storage unavailable; the state reset below is what actually matters.
+        }
         setCurrentLevelIndex(0);
         // Grid and stats reset is handled by useEffect on currentLevel change
     };
