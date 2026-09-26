@@ -1,7 +1,7 @@
 import React from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Tile } from './Tile';
-import type { Grid } from '../types';
+import type { Grid, TileType } from '../types';
 
 interface GameBoardProps {
     grid: Grid;
@@ -9,14 +9,15 @@ interface GameBoardProps {
     onTileClick: (r: number, c: number) => void;
     onTileSwipe: (r: number, c: number, direction: 'up' | 'down' | 'left' | 'right') => void;
     boardId: number;
+    characters: TileType[];
 }
 
-export const GameBoard: React.FC<GameBoardProps> = ({ grid, selectedTile, onTileClick, onTileSwipe, boardId }) => {
+export const GameBoard: React.FC<GameBoardProps> = ({ grid, selectedTile, onTileClick, onTileSwipe, boardId, characters }) => {
 
     return (
-        <div className="relative bg-black/40 backdrop-blur-md rounded-2xl p-2 border-2 border-purple-500/30 shadow-2xl w-full max-w-[520px] aspect-square mx-auto">
+        <div className="relative bg-gelato-tray rounded-[22px] p-2 shadow-[inset_0_-5px_0_rgba(0,0,0,0.35),0_10px_30px_rgba(0,0,0,0.35)] w-full max-w-[520px] aspect-square mx-auto">
             <div
-                className="relative grid grid-cols-8 gap-1.5 touch-none w-full h-full"
+                className="relative grid grid-cols-8 gap-1 touch-none w-full h-full"
                 style={{
                     gridTemplateRows: 'repeat(8, 1fr)',
                     gridTemplateColumns: 'repeat(8, 1fr)'
@@ -24,7 +25,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ grid, selectedTile, onTile
             >
                 {/* Background Grid (Empty Slots) */}
                 {Array.from({ length: 64 }).map((_, i) => (
-                    <div key={i} className="w-full h-full bg-white/5 rounded-2xl" />
+                    <div key={i} className="w-full h-full bg-gelato-raised rounded-xl" />
                 ))}
 
                 {/* Tiles Layer - Rendered as a flat list for Framer Motion layout animations */}
@@ -37,6 +38,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ grid, selectedTile, onTile
                                 <Tile
                                     key={tile.id}
                                     tile={tile}
+                                    flavor={Math.max(0, characters.indexOf(tile.type))}
                                     isSelected={selectedTile?.r === r && selectedTile?.c === c}
                                     onClick={() => onTileClick(r, c)}
                                     onSwipe={(direction) => onTileSwipe(r, c, direction)}

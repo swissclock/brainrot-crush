@@ -3,118 +3,45 @@ import { motion } from 'framer-motion';
 import type { Tile as TileType } from '../types';
 import { BombIcon, FireIcon } from './Icons';
 
-// Import character images (transparent background versions)
-import tralalero from '../assets/tralalerotralala_bg.png';
-import tung from '../assets/tungtungtungtungtungtungtungtungtungsahur_bg.png';
-import ballerina from '../assets/ballerinacappucina_bg.png';
-import brr from '../assets/brrbrrpatapim_bg.png';
-import bombardilo from '../assets/bombardirocrocodilo_bg.png';
-import cappuccino from '../assets/cappuccinoassassino_bg.png';
-import lirili from '../assets/lirililarila_bg.png';
-import garamararam from '../assets/udindindindindunmadindindindun_bg.png';
-import tralaleritos from '../assets/trictracbaraboom_bg.png';
-import chicleteira from '../assets/frigocamelo_bg.png';
-import trippi from '../assets/trippitroppi_bg.png';
-import chimpanzini from '../assets/chimpanzinibananini_bg.png';
-import ballerinolololo from '../assets/ballerinolololo_bg.png';
-import bobrito from '../assets/bobritobandito_bg.png';
-import bombombini from '../assets/bombombinigusini_bg.png';
-import boneca from '../assets/bonecaambalabu_bg.png';
-import briibrii from '../assets/briibriibicusdicusbombicus_bg.png';
-import burbaloni from '../assets/burbalonilulilolli_bg.png';
-import chaimaestro from '../assets/chaimaestro_bg.png';
-import cocofanto from '../assets/cocofantoelefanto_bg.png';
-import espressona from '../assets/espressonasignora_bg.png';
-import frigocamelo from '../assets/frigocamelo_bg.png';
-import frulifrula from '../assets/frulifrula_bg.png';
-import girafaceleste from '../assets/girafaceleste_bg.png';
-import laesok from '../assets/laesoksikola_bg.png';
-import matteo from '../assets/matteooooooooooooo_bg.png';
-import orangutini from '../assets/orangutiniananasini_bg.png';
-import orcalero from '../assets/orcaleroorcala_bg.png';
-import rhinotoasterino from '../assets/rhinotoasterino_bg.png';
-import sigmaboy from '../assets/sigmaboy_bg.png';
-import tobtobi from '../assets/tobtobitobtobtobitob_bg.png';
-import tracotucotulu from '../assets/tracotucotuludelapeladustuz_bg.png';
-import zibrazubra from '../assets/zibrazubrazibralini_bg.png';
+import { CHARACTER_IMAGES } from '../characterImages';
 
-const CHARACTER_IMAGES = {
-    tralalero,
-    tung,
-    ballerina,
-    brr,
-    bombardilo,
-    cappuccino,
-    lirili,
-    garamararam,
-    tralaleritos,
-    chicleteira,
-    trippi,
-    chimpanzini,
-    ballerinolololo,
-    bobrito,
-    bombombini,
-    boneca,
-    briibrii,
-    burbaloni,
-    chaimaestro,
-    cocofanto,
-    espressona,
-    frigocamelo,
-    frulifrula,
-    girafaceleste,
-    laesok,
-    matteo,
-    orangutini,
-    orcalero,
-    rhinotoasterino,
-    sigmaboy,
-    tobtobi,
-    tracotucotulu,
-    zibrazubra,
-};
+// One flavour per character slot in the level, so tiles on the same board never share a
+// colour. A level has at most six characters.
+const FLAVORS = [
+    'bg-scoop-blueberry',
+    'bg-scoop-hazelnut',
+    'bg-scoop-strawberry',
+    'bg-scoop-pistachio',
+    'bg-scoop-lavender',
+    'bg-scoop-lemon',
+];
 
 interface TileProps {
     tile: TileType;
+    flavor: number;
     isSelected: boolean;
     onClick: () => void;
     onSwipe?: (direction: 'up' | 'down' | 'left' | 'right') => void;
     style?: React.CSSProperties;
 }
 
-export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe, style }) => {
+export const Tile: React.FC<TileProps> = ({ tile, flavor, isSelected, onClick, onSwipe, style }) => {
     // Track if a swap has already been triggered for the current drag gesture
     const hasSwapped = React.useRef(false);
 
-    const getSpecialStyle = () => {
-        if (tile.special === 'striped-h') {
-            return 'bg-gradient-to-r from-yellow-400/30 via-orange-500/30 to-yellow-400/30';
-        } else if (tile.special === 'striped-v') {
-            return 'bg-gradient-to-b from-yellow-400/30 via-orange-500/30 to-yellow-400/30';
-        } else if (tile.special === 'bomb') {
-            return 'bg-gradient-to-br from-purple-500/30 via-pink-500/30 to-purple-500/30';
-        } else if (tile.special === 'mega-bomb') {
-            return 'bg-gradient-to-br from-red-600/40 via-orange-500/40 to-yellow-400/40';
-        }
-        return 'bg-white/5'; // Subtle glass background for normal tiles
-    };
-
-    const getSpecialGlow = () => {
-        if (tile.special === 'mega-bomb') {
-            return 'shadow-[0_0_30px_rgba(255,100,0,0.8)] z-20';
-        } else if (tile.special) {
-            return 'shadow-[0_0_15px_rgba(255,215,0,0.5)] z-10';
-        }
+    const getSpecialRing = () => {
+        if (tile.special === 'mega-bomb') return 'ring-[3px] ring-inset ring-gelato-strawberry';
+        if (tile.special === 'bomb') return 'ring-[3px] ring-inset ring-gelato-lemon';
         return '';
     };
 
     const getSpecialOverlay = () => {
         if (tile.special === 'striped-h') {
             return (
-                <div className="absolute inset-0 border-[3px] border-white/60 rounded-2xl overflow-hidden shadow-[inset_0_0_10px_rgba(255,255,255,0.5)]">
-                    <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-white/90 shadow-[0_0_10px_white] -translate-y-1/2" />
+                <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
+                    <div className="absolute top-1/2 left-1 right-1 h-1 -mt-0.5 rounded-full bg-white shadow-[0_0_6px_white]" />
                     <motion.div
-                        className="absolute top-0 bottom-0 left-0 w-full bg-gradient-to-r from-transparent via-white/40 to-transparent"
+                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
                         animate={{ x: ['-100%', '100%'] }}
                         transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
                     />
@@ -122,39 +49,34 @@ export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe, 
             );
         } else if (tile.special === 'striped-v') {
             return (
-                <div className="absolute inset-0 border-[3px] border-white/60 rounded-2xl overflow-hidden shadow-[inset_0_0_10px_rgba(255,255,255,0.5)]">
-                    <div className="absolute left-1/2 top-0 bottom-0 w-[2px] bg-white/90 shadow-[0_0_10px_white] -translate-x-1/2" />
+                <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
+                    <div className="absolute left-1/2 top-1 bottom-1 w-1 -ml-0.5 rounded-full bg-white shadow-[0_0_6px_white]" />
                     <motion.div
-                        className="absolute left-0 right-0 top-0 h-full bg-gradient-to-b from-transparent via-white/40 to-transparent"
+                        className="absolute inset-0 bg-gradient-to-b from-transparent via-white/40 to-transparent"
                         animate={{ y: ['-100%', '100%'] }}
                         transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
                     />
                 </div>
             );
-
         } else if (tile.special === 'bomb') {
             return (
-                <div className="absolute inset-0 border-[3px] border-purple-400/60 rounded-2xl overflow-hidden">
-                    <motion.div
-                        className="absolute bottom-1 right-1 flex items-center justify-center pointer-events-none"
-                        animate={{ scale: [1, 1.1, 1] }}
-                        transition={{ duration: 0.8, repeat: Infinity, ease: 'easeInOut' }}
-                    >
-                        <BombIcon className="w-8 h-8 drop-shadow-[0_0_5px_rgba(0,0,0,0.8)] opacity-90" />
-                    </motion.div>
-                </div>
+                <motion.div
+                    className="absolute -bottom-1 -right-1 pointer-events-none"
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ duration: 0.8, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                    <BombIcon className="w-5 h-5 md:w-7 md:h-7" />
+                </motion.div>
             );
         } else if (tile.special === 'mega-bomb') {
             return (
-                <div className="absolute inset-0 border-[4px] border-red-500/80 rounded-2xl overflow-hidden shadow-[0_0_20px_rgba(255,0,0,0.3)]">
-                    <motion.div
-                        className="absolute bottom-1 right-1 pointer-events-none z-20"
-                        animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
-                        transition={{ duration: 0.5, repeat: Infinity }}
-                    >
-                        <FireIcon className="w-8 h-8 drop-shadow-[0_0_10px_rgba(255,69,0,0.8)] opacity-90" />
-                    </motion.div>
-                </div>
+                <motion.div
+                    className="absolute -bottom-1 -right-1 pointer-events-none"
+                    animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
+                    transition={{ duration: 0.5, repeat: Infinity }}
+                >
+                    <FireIcon className="w-5 h-5 md:w-7 md:h-7" />
+                </motion.div>
             );
         }
         return null;
@@ -203,29 +125,6 @@ export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe, 
             rotate: 180,
             transition: { duration: 0.3, ease: 'backIn' }
         };
-    };
-
-    const getCharacterBackground = () => {
-        // Unique background gradients for character groups
-        const type = tile.type;
-        // Group 1: Blues/Cyans
-        if (['tralalero', 'brr', 'girafaceleste', 'orcalero'].includes(type))
-            return 'bg-gradient-to-br from-cyan-500/20 to-blue-600/20';
-        // Group 2: Reds/Pinks
-        if (['ballerina', 'bombardilo', 'frulifrula', 'matteooooooooooooo'].includes(type))
-            return 'bg-gradient-to-br from-red-500/20 to-pink-600/20';
-        // Group 3: Greens
-        if (['bombardilo', 'chimpanzini', 'laesok'].includes(type))
-            return 'bg-gradient-to-br from-green-500/20 to-emerald-600/20';
-        // Group 4: Yellows/Oranges
-        if (['tung', 'cappuccino', 'bombombini', 'sigmaboy'].includes(type))
-            return 'bg-gradient-to-br from-yellow-500/20 to-orange-600/20';
-        // Group 5: Purples
-        if (['lirili', 'garamararam', 'trippi'].includes(type))
-            return 'bg-gradient-to-br from-purple-500/20 to-indigo-600/20';
-
-        // Default fallback
-        return 'bg-white/10';
     };
 
     return (
@@ -286,19 +185,18 @@ export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe, 
             }}
             style={style}
             className={`
-        w-full h-full aspect-square relative cursor-pointer rounded-2xl 
+        w-full h-full aspect-square relative cursor-pointer rounded-xl
         flex items-center justify-center touch-none select-none
-        ${getSpecialStyle() || getCharacterBackground()}
-        ${getSpecialGlow()}
+        ${FLAVORS[flavor % FLAVORS.length]} shadow-tile
+        ${isSelected ? 'ring-[3px] ring-gelato-strawberry ring-offset-[3px] ring-offset-gelato-cream z-10' : getSpecialRing()}
         -webkit-tap-highlight-color-transparent
-        ${isSelected ? 'ring-4 ring-yellow-400 z-10' : ''}
       `}
         >
             <img
                 src={CHARACTER_IMAGES[tile.type]}
                 alt={tile.type}
                 draggable={false}
-                className="w-[110%] h-[110%] object-contain select-none pointer-events-none"
+                className="w-[92%] h-[92%] object-contain select-none pointer-events-none"
             />
 
             {getSpecialOverlay()}
@@ -307,7 +205,9 @@ export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe, 
                 // Pulse the opacity of a fixed glow rather than animating box-shadow,
                 // which repaints the tile on every frame.
                 <motion.div
-                    className="absolute inset-0 rounded-2xl shadow-[0_0_20px_rgba(255,215,0,0.8)] pointer-events-none"
+                    className={`absolute inset-0 rounded-xl pointer-events-none ${tile.special === 'mega-bomb'
+                        ? 'shadow-[0_0_16px_4px_rgba(255,90,135,0.8)]'
+                        : 'shadow-[0_0_14px_2px_rgba(255,214,90,0.8)]'}`}
                     animate={{ opacity: [0.5, 1, 0.5] }}
                     transition={{
                         duration: 1,

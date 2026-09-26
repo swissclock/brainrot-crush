@@ -214,7 +214,7 @@ export const useGameLogic = () => {
             }
             return createInitialGrid(currentLevel.characters);
         });
-        showFeedback('🔄 RESHUFFLED!');
+        showFeedback('RESHUFFLE!');
     };
 
     const applyGravity = (currentGrid: Grid) => {
@@ -391,13 +391,13 @@ export const useGameLogic = () => {
 
                 // Feedback
                 if (match6) {
-                    showFeedback('🌈 GODLIKE! 6 MATCH!', 2500);
+                    showFeedback('MAMMA MIA!', 2500);
                 } else if (hasLT) {
-                    showFeedback('⭐ L-SHAPE BONUS!');
+                    showFeedback('PERFETTO!');
                 } else if (extraPoints >= 200) {
-                    showFeedback('🔥 AMAZING!');
+                    showFeedback('BELLISSIMO!');
                 } else if (combo >= 3) {
-                    showFeedback(`💥 ${combo}x COMBO!`);
+                    showFeedback(`${combo}× COMBO!`);
                 }
 
                 // Apply changes to grid
@@ -479,7 +479,7 @@ export const useGameLogic = () => {
                         comboRemoves.push({ r, c });
                     }
                 }
-                showFeedback('💥 SUPERNOVA!', 3000);
+                showFeedback('SUPERNOVA!', 3000);
             }
             // 2. Stripe + Stripe = Cross (Row + Col)
             else if ((tile1.special === 'striped-h' || tile1.special === 'striped-v') &&
@@ -488,7 +488,7 @@ export const useGameLogic = () => {
                 for (let c = 0; c < BOARD_SIZE; c++) comboRemoves.push({ r: r2, c }); // Row 2 (if different)
                 for (let r = 0; r < BOARD_SIZE; r++) comboRemoves.push({ r, c: c1 }); // Col 1
                 for (let r = 0; r < BOARD_SIZE; r++) comboRemoves.push({ r, c: c2 }); // Col 2
-                showFeedback('✨ CROSS BLAST!');
+                showFeedback('CROSS BLAST!');
             }
             // 3. Stripe + Bomb = 3 Rows + 3 Cols
             else if ((tile1.special?.includes('striped') && tile2.special?.includes('bomb')) ||
@@ -499,7 +499,7 @@ export const useGameLogic = () => {
                 for (let c = Math.max(0, c1 - 1); c <= Math.min(BOARD_SIZE - 1, c1 + 1); c++) {
                     for (let r = 0; r < BOARD_SIZE; r++) comboRemoves.push({ r, c });
                 }
-                showFeedback('🚀 MEGA BEAM!');
+                showFeedback('MEGA BEAM!');
             }
 
             // Execute combo removal

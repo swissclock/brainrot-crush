@@ -1,17 +1,26 @@
+@import '@fontsource/nunito/latin-600.css';
+@import '@fontsource/nunito/latin-800.css';
+@import '@fontsource/nunito/latin-900.css';
+@import '@fontsource/bagel-fat-one/latin-400.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-}
-
 body {
-  @apply bg-slate-900 text-white overflow-hidden touch-none select-none;
+  @apply bg-gelato-bg text-gelato-cream font-sans overflow-hidden touch-none select-none;
   /* Prevent scrolling on mobile */
   overscroll-behavior: none;
 }
 
 #root {
   @apply h-screen w-screen flex flex-col items-center justify-center;
+}
+
+@layer utilities {
+  /* Chunky outlined banner text: the stroke sits behind the fill. */
+  .text-outline {
+    -webkit-text-stroke: 6px theme('colors.gelato.bg');
+    paint-order: stroke fill;
+  }
 }

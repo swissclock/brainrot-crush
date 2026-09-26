@@ -18,8 +18,8 @@ export const FireIcon = ({ className }: { className?: string }) => (
 );
 
 export const StarIcon = ({ className }: { className?: string }) => (
-    <svg viewBox="0 0 100 100" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M50 10 L61 35 L88 39 L68 58 L73 85 L50 73 L27 85 L32 58 L12 39 L39 35 Z" fill="#FFD700" stroke="#B8860B" strokeWidth="3" strokeLinejoin="round" />
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2.8l2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.3l-5.6 2.9 1.1-6.3L2.9 9.5l6.3-.9z" stroke="#1B1311" strokeWidth="1.2" strokeLinejoin="round" />
     </svg>
 );
 

@@ -18,11 +18,11 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { failed: 
 
         return (
             <div className="min-h-[100dvh] flex flex-col items-center justify-center gap-4 p-6 text-center">
-                <h1 className="text-3xl font-black">Something went wrong</h1>
-                <p className="text-white/70">Your level progress is saved.</p>
+                <h1 className="font-display text-4xl">Mamma mia, it broke</h1>
+                <p className="font-semibold text-gelato-soft">Your level progress is saved.</p>
                 <button
                     onClick={() => window.location.reload()}
-                    className="bg-yellow-400 hover:bg-yellow-300 text-purple-900 font-black py-3 px-6 rounded-xl"
+                    className="bg-gelato-strawberry hover:bg-gelato-strawberry-hi text-gelato-strawberry-ink font-display text-xl py-3 px-8 rounded-[18px] shadow-button"
                 >
                     Reload
                 </button>
