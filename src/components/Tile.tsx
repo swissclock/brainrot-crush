@@ -229,16 +229,18 @@ export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe, 
     };
 
     return (
+        // Only transform and opacity are animated here: they stay on the compositor. Animating
+        // `filter` on all 64 tiles (plus a backdrop blur and drop-shadow per tile) gave each
+        // tile its own offscreen buffers, and mobile Safari kills the page once those pile up.
         <motion.div
             layout
-            initial={{ y: -50, opacity: 1, scale: 0.5, filter: 'brightness(1)' }} // Falling animation
+            initial={{ y: -50, opacity: 1, scale: 0.5 }} // Falling animation
             animate={{
                 y: 0,
-                scale: 1,
+                scale: isSelected ? 1.08 : 1,
                 opacity: 1,
                 rotate: 0,
                 zIndex: 1,
-                filter: isSelected ? 'brightness(1.2)' : 'brightness(1)'
             }}
             exit={getExitAnimation() as any}
             transition={{
@@ -249,7 +251,6 @@ export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe, 
             }}
             whileHover={{
                 scale: 1.05,
-                filter: 'brightness(1.1)',
                 zIndex: 20,
                 transition: { duration: 0.2 }
             }}
@@ -289,30 +290,25 @@ export const Tile: React.FC<TileProps> = ({ tile, isSelected, onClick, onSwipe, 
         flex items-center justify-center touch-none select-none
         ${getSpecialStyle() || getCharacterBackground()}
         ${getSpecialGlow()}
-        backdrop-blur-sm
-        transition-colors duration-200
         -webkit-tap-highlight-color-transparent
-        ${isSelected ? 'md:ring-4 md:ring-yellow-400 md:z-10' : ''}
+        ${isSelected ? 'ring-4 ring-yellow-400 z-10' : ''}
       `}
         >
             <img
                 src={CHARACTER_IMAGES[tile.type]}
                 alt={tile.type}
-                className="w-[110%] h-[110%] object-contain select-none pointer-events-none drop-shadow-2xl"
+                draggable={false}
+                className="w-[110%] h-[110%] object-contain select-none pointer-events-none"
             />
 
             {getSpecialOverlay()}
 
             {tile.special && (
+                // Pulse the opacity of a fixed glow rather than animating box-shadow,
+                // which repaints the tile on every frame.
                 <motion.div
-                    className="absolute inset-0 rounded-2xl"
-                    animate={{
-                        boxShadow: [
-                            '0 0 10px rgba(255,215,0,0.5)',
-                            '0 0 20px rgba(255,215,0,0.8)',
-                            '0 0 10px rgba(255,215,0,0.5)',
-                        ],
-                    }}
+                    className="absolute inset-0 rounded-2xl shadow-[0_0_20px_rgba(255,215,0,0.8)] pointer-events-none"
+                    animate={{ opacity: [0.5, 1, 0.5] }}
                     transition={{
                         duration: 1,
                         repeat: Infinity,

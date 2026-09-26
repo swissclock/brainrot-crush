@@ -5,6 +5,16 @@ import { GameBoard } from './components/GameBoard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TrophyIcon, RetryIcon, NextIcon, TrashIcon } from './components/Icons';
 
+// Background particles get their random positions once. Computing them inline gave every
+// re-render (several per move) new keyframes, restarting all 20 animations each time.
+const PARTICLES = Array.from({ length: 12 }, () => ({
+  left: Math.random() * 100,
+  top: Math.random() * 100,
+  dx: (Math.random() - 0.5) * 60,
+  dy: (Math.random() - 0.5) * 60,
+  duration: 10 + Math.random() * 10,
+}));
+
 function App() {
   const {
     grid,
@@ -12,6 +22,8 @@ function App() {
     moves,
     selectedTile,
     handleTileClick,
+    handleTileSwipe,
+    boardId,
     currentLevel,
     showLevelComplete,
     nextLevel,
@@ -38,23 +50,18 @@ function App() {
     <div className="min-h-[100dvh] bg-gradient-to-br from-purple-800 via-slate-800 to-gray-900 flex flex-col items-center justify-center p-2 md:p-4 overflow-hidden">
       {/* Animated background particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
+        {PARTICLES.map((p, i) => (
           <motion.div
             key={i}
             className="absolute w-2 h-2 bg-purple-500/20 rounded-full"
-            animate={{
-              x: [Math.random() * window.innerWidth, Math.random() * window.innerWidth],
-              y: [Math.random() * window.innerHeight, Math.random() * window.innerHeight],
-            }}
+            animate={{ x: [0, `${p.dx}vw`], y: [0, `${p.dy}vh`] }}
             transition={{
-              duration: 10 + Math.random() * 10,
+              duration: p.duration,
               repeat: Infinity,
+              repeatType: 'mirror',
               ease: 'linear',
             }}
-            style={{
-              left: Math.random() * 100 + '%',
-              top: Math.random() * 100 + '%',
-            }}
+            style={{ left: `${p.left}%`, top: `${p.top}%` }}
           />
         ))}
       </div>
@@ -139,6 +146,8 @@ function App() {
             grid={grid}
             selectedTile={selectedTile}
             onTileClick={handleTileClick}
+            onTileSwipe={handleTileSwipe}
+            boardId={boardId}
           />
 
           {/* Feedback Message Overlay - Centered on board */}

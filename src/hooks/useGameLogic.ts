@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import type { Grid, Tile, TileType } from '../types';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import type { Grid, Level, Tile, TileType } from '../types';
 import { BOARD_SIZE, LEVELS } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -54,8 +54,56 @@ export const useGameLogic = () => {
     const [combo, setCombo] = useState(0);
     const [lastMoveScore, setLastMoveScore] = useState(0);
     const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+    // Bumped every time a fresh board is dealt, so the board can drop the old tiles
+    // outright instead of running 64 exit animations on top of 64 entering tiles.
+    const [boardId, setBoardId] = useState(0);
 
     const currentLevel = LEVELS[currentLevelIndex];
+
+    // Delayed grid writes (swap reverts, combo clears) belong to the board they were
+    // scheduled on. They are tracked so a new board can cancel them; otherwise a revert
+    // from the previous level lands in the new level's grid.
+    const boardTimers = useRef(new Set<ReturnType<typeof setTimeout>>());
+    const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const schedule = useCallback((fn: () => void, ms: number) => {
+        const id = setTimeout(() => {
+            boardTimers.current.delete(id);
+            fn();
+        }, ms);
+        boardTimers.current.add(id);
+    }, []);
+
+    const clearBoardTimers = useCallback(() => {
+        boardTimers.current.forEach(clearTimeout);
+        boardTimers.current.clear();
+        if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
+        feedbackTimer.current = null;
+    }, []);
+
+    // One timer for the banner: a newer message must not be cleared early by the
+    // timeout of the message it replaced.
+    const showFeedback = useCallback((message: string, ms = 2000) => {
+        if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
+        setFeedbackMessage(message);
+        feedbackTimer.current = setTimeout(() => setFeedbackMessage(null), ms);
+    }, []);
+
+    const startBoard = useCallback((level: Level) => {
+        clearBoardTimers();
+        setGrid(createInitialGrid(level.characters));
+        setMoves(level.moves);
+        setScore(0);
+        setCombo(0);
+        setSelectedTile(null);
+        setIsProcessing(false);
+        setShowLevelComplete(false);
+        setLastMoveScore(0);
+        setFeedbackMessage(null);
+        setBoardId(id => id + 1);
+    }, [clearBoardTimers]);
+
+    useEffect(() => clearBoardTimers, [clearBoardTimers]);
 
     useEffect(() => {
         try {
@@ -66,16 +114,8 @@ export const useGameLogic = () => {
     }, [currentLevelIndex]);
 
     useEffect(() => {
-        setGrid(createInitialGrid(currentLevel.characters));
-        setMoves(currentLevel.moves);
-        setScore(0); // Reset score when level changes
-        setCombo(0); // Reset combo
-        setSelectedTile(null); // Clear selected tile
-        setIsProcessing(false); // Ensure not processing
-        setShowLevelComplete(false); // Hide level complete message
-        setLastMoveScore(0); // Reset last move score
-        setFeedbackMessage(null); // Clear feedback message
-    }, [currentLevel]);
+        startBoard(currentLevel);
+    }, [currentLevel, startBoard]);
 
     const findMatches = (currentGrid: Grid) => {
         const matches: { r: number; c: number; count: number; horizontal: boolean; isLT: boolean }[] = [];
@@ -157,20 +197,24 @@ export const useGameLogic = () => {
                 if (tile) tiles.push({ ...tile, id: uuidv4(), special: null });
             }));
 
-            // Fisher-Yates shuffle
-            for (let i = tiles.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
-            }
+            // A single shuffle can deal another dead board, which would reshuffle forever.
+            // Retry until the board is playable, and deal a fresh one if the tile mix can't be.
+            for (let attempt = 0; attempt < 50; attempt++) {
+                // Fisher-Yates shuffle
+                for (let i = tiles.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
+                }
 
-            const newGrid: Grid = [];
-            for (let r = 0; r < BOARD_SIZE; r++) {
-                newGrid.push(tiles.slice(r * BOARD_SIZE, (r + 1) * BOARD_SIZE));
+                const newGrid: Grid = [];
+                for (let r = 0; r < BOARD_SIZE; r++) {
+                    newGrid.push(tiles.slice(r * BOARD_SIZE, (r + 1) * BOARD_SIZE));
+                }
+                if (findMatches(newGrid).length === 0 && hasLegalMoves(newGrid)) return newGrid;
             }
-            return newGrid;
+            return createInitialGrid(currentLevel.characters);
         });
-        setFeedbackMessage('🔄 RESHUFFLED!');
-        setTimeout(() => setFeedbackMessage(null), 2000);
+        showFeedback('🔄 RESHUFFLED!');
     };
 
     const applyGravity = (currentGrid: Grid) => {
@@ -347,17 +391,13 @@ export const useGameLogic = () => {
 
                 // Feedback
                 if (match6) {
-                    setFeedbackMessage('🌈 GODLIKE! 6 MATCH!');
-                    setTimeout(() => setFeedbackMessage(null), 2500);
+                    showFeedback('🌈 GODLIKE! 6 MATCH!', 2500);
                 } else if (hasLT) {
-                    setFeedbackMessage('⭐ L-SHAPE BONUS!');
-                    setTimeout(() => setFeedbackMessage(null), 2000);
+                    showFeedback('⭐ L-SHAPE BONUS!');
                 } else if (extraPoints >= 200) {
-                    setFeedbackMessage('🔥 AMAZING!');
-                    setTimeout(() => setFeedbackMessage(null), 2000);
+                    showFeedback('🔥 AMAZING!');
                 } else if (combo >= 3) {
-                    setFeedbackMessage(`💥 ${combo}x COMBO!`);
-                    setTimeout(() => setFeedbackMessage(null), 2000);
+                    showFeedback(`💥 ${combo}x COMBO!`);
                 }
 
                 // Apply changes to grid
@@ -384,8 +424,8 @@ export const useGameLogic = () => {
                 });
 
                 // Reset isProcessing in the next tick to allow cascading matches to be detected
-                // Using setTimeout(0) ensures this happens after the grid state update completes
-                setTimeout(() => {
+                // Using a 0ms timer ensures this happens after the grid state update completes
+                schedule(() => {
                     //
                     setIsProcessing(false);
                 }, 0);
@@ -439,8 +479,7 @@ export const useGameLogic = () => {
                         comboRemoves.push({ r, c });
                     }
                 }
-                setFeedbackMessage('💥 SUPERNOVA!');
-                setTimeout(() => setFeedbackMessage(null), 3000);
+                showFeedback('💥 SUPERNOVA!', 3000);
             }
             // 2. Stripe + Stripe = Cross (Row + Col)
             else if ((tile1.special === 'striped-h' || tile1.special === 'striped-v') &&
@@ -449,8 +488,7 @@ export const useGameLogic = () => {
                 for (let c = 0; c < BOARD_SIZE; c++) comboRemoves.push({ r: r2, c }); // Row 2 (if different)
                 for (let r = 0; r < BOARD_SIZE; r++) comboRemoves.push({ r, c: c1 }); // Col 1
                 for (let r = 0; r < BOARD_SIZE; r++) comboRemoves.push({ r, c: c2 }); // Col 2
-                setFeedbackMessage('✨ CROSS BLAST!');
-                setTimeout(() => setFeedbackMessage(null), 2000);
+                showFeedback('✨ CROSS BLAST!');
             }
             // 3. Stripe + Bomb = 3 Rows + 3 Cols
             else if ((tile1.special?.includes('striped') && tile2.special?.includes('bomb')) ||
@@ -461,12 +499,11 @@ export const useGameLogic = () => {
                 for (let c = Math.max(0, c1 - 1); c <= Math.min(BOARD_SIZE - 1, c1 + 1); c++) {
                     for (let r = 0; r < BOARD_SIZE; r++) comboRemoves.push({ r, c });
                 }
-                setFeedbackMessage('🚀 MEGA BEAM!');
-                setTimeout(() => setFeedbackMessage(null), 2000);
+                showFeedback('🚀 MEGA BEAM!');
             }
 
             // Execute combo removal
-            setTimeout(() => {
+            schedule(() => {
                 // Calculate score for combo
                 const comboPoints = comboRemoves.length * 50;
                 setScore(s => s + comboPoints);
@@ -506,7 +543,7 @@ export const useGameLogic = () => {
                 return newGrid;
             });
 
-            setTimeout(() => {
+            schedule(() => {
                 setGrid(prev => {
                     const newGrid = [...prev.map(row => [...row])];
                     newGrid[r1][c1] = tile1;
@@ -516,7 +553,7 @@ export const useGameLogic = () => {
                 setIsProcessing(false); // Unblock after revert
             }, 200);
         }
-    }, [grid]);
+    }, [grid, schedule, showFeedback]);
 
     const handleTileClick = (r: number, c: number) => {
         if (isProcessing || moves <= 0) return;
@@ -540,6 +577,20 @@ export const useGameLogic = () => {
         }
     };
 
+    // A swipe is one gesture, so it swaps directly. Routing it through two tile clicks
+    // made the second click read the selection from before the first one, so swiping an
+    // unselected tile only selected its neighbour instead of swapping.
+    const handleTileSwipe = (r: number, c: number, direction: 'up' | 'down' | 'left' | 'right') => {
+        if (isProcessing || moves <= 0) return;
+
+        const targetR = r + (direction === 'down' ? 1 : direction === 'up' ? -1 : 0);
+        const targetC = c + (direction === 'right' ? 1 : direction === 'left' ? -1 : 0);
+        if (targetR < 0 || targetR >= BOARD_SIZE || targetC < 0 || targetC >= BOARD_SIZE) return;
+
+        setSelectedTile(null);
+        swapTiles(r, c, targetR, targetC);
+    };
+
     const nextLevel = () => {
         const nextLevelIndex = LEVELS.findIndex(l => l.number === currentLevel.number) + 1;
         if (nextLevelIndex < LEVELS.length) {
@@ -549,11 +600,7 @@ export const useGameLogic = () => {
     };
 
     const restartLevel = () => {
-        setGrid(createInitialGrid(currentLevel.characters));
-        setMoves(currentLevel.moves);
-        setScore(0);
-        setShowLevelComplete(false);
-        setCombo(0);
+        startBoard(currentLevel);
     };
 
     const resetProgress = () => {
@@ -562,8 +609,10 @@ export const useGameLogic = () => {
         } catch {
             // Storage unavailable; the state reset below is what actually matters.
         }
-        setCurrentLevelIndex(0);
-        // Grid and stats reset is handled by useEffect on currentLevel change
+        // Already on level 1 the index doesn't change and the level effect won't fire,
+        // so deal the board here.
+        if (currentLevelIndex === 0) startBoard(LEVELS[0]);
+        else setCurrentLevelIndex(0);
     };
 
     return {
@@ -572,6 +621,8 @@ export const useGameLogic = () => {
         moves,
         selectedTile,
         handleTileClick,
+        handleTileSwipe,
+        boardId,
         currentLevel,
         showLevelComplete,
         nextLevel,
