@@ -169,6 +169,11 @@ export const useGameLogic = () => {
         // Check all possible swaps
         for (let r = 0; r < BOARD_SIZE; r++) {
             for (let c = 0; c < BOARD_SIZE; c++) {
+                // Two neighbouring specials can always be swapped for a combo, even when the
+                // swap itself lines up no match.
+                if (currentGrid[r][c]?.special &&
+                    (currentGrid[r][c + 1]?.special || currentGrid[r + 1]?.[c]?.special)) return true;
+
                 // Try swapping right
                 if (c < BOARD_SIZE - 1) {
                     const testGrid = currentGrid.map(row => [...row]);
@@ -192,10 +197,9 @@ export const useGameLogic = () => {
 
     const reshuffleGrid = () => {
         setGrid(prev => {
-            const tiles: Tile[] = [];
-            prev.forEach(row => row.forEach(tile => {
-                if (tile) tiles.push({ ...tile, id: uuidv4(), special: null });
-            }));
+            // Specials survive the shuffle: the player earned them. Tiles keep their ids,
+            // so each one visibly slides to its new cell.
+            const tiles: Tile[] = prev.flat().filter((tile): tile is Tile => tile !== null);
 
             // A single shuffle can deal another dead board, which would reshuffle forever.
             // Retry until the board is playable, and deal a fresh one if the tile mix can't be.
@@ -212,7 +216,17 @@ export const useGameLogic = () => {
                 }
                 if (findMatches(newGrid).length === 0 && hasLegalMoves(newGrid)) return newGrid;
             }
-            return createInitialGrid(currentLevel.characters);
+
+            // The tile mix can't make a playable board: deal a fresh one, then drop the
+            // specials back in at random cells.
+            const freshGrid = createInitialGrid(currentLevel.characters);
+            const cells = Array.from({ length: BOARD_SIZE * BOARD_SIZE }, (_, i) => i)
+                .sort(() => Math.random() - 0.5);
+            tiles.filter(tile => tile.special).forEach((tile, i) => {
+                const cell = cells[i];
+                freshGrid[Math.floor(cell / BOARD_SIZE)][cell % BOARD_SIZE] = tile;
+            });
+            return freshGrid;
         });
         showFeedback('RESHUFFLE!');
     };
