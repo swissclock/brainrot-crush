@@ -2,6 +2,18 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Grid, Level, Tile, TileType } from '../types';
 import { BOARD_SIZE, LEVELS } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { clearProgress, loadProgress, moveBonusFor, saveProgress, starsFor, type Progress } from '../progress';
+
+// How a cleared level went, frozen at the moment the target was reached.
+export interface LevelResult {
+    score: number;
+    movesLeft: number;
+    bonus: number;
+    total: number;
+    stars: number;
+    previousBest: number;
+    isNewBest: boolean;
+}
 
 const generateRandomTile = (availableTypes: TileType[]): Tile => ({
     id: uuidv4(),
@@ -30,13 +42,14 @@ const createInitialGrid = (availableTypes: TileType[]): Grid => {
 
 // Read the saved level defensively: localStorage is user-writable and survives reloads,
 // so a corrupted or out-of-range value would otherwise leave the game permanently blank.
-const loadSavedLevelIndex = (): number => {
+const loadSavedLevelIndex = (unlocked: number): number => {
     try {
         const saved = localStorage.getItem('brainrot_level');
         if (!saved) return 0;
         const parsed = Number.parseInt(saved, 10);
         if (!Number.isInteger(parsed) || parsed < 0 || parsed >= LEVELS.length) return 0;
-        return parsed;
+        // Never resume on a level the map still shows as locked.
+        return Math.min(parsed, unlocked);
     } catch {
         // Private browsing or blocked site data: fall back to level 1.
         return 0;
@@ -44,13 +57,14 @@ const loadSavedLevelIndex = (): number => {
 };
 
 export const useGameLogic = () => {
-    const [currentLevelIndex, setCurrentLevelIndex] = useState(loadSavedLevelIndex);
+    const [progress, setProgress] = useState<Progress>(loadProgress);
+    const [currentLevelIndex, setCurrentLevelIndex] = useState(() => loadSavedLevelIndex(progress.unlocked));
     const [score, setScore] = useState(0);
     const [moves, setMoves] = useState(0);
     const [grid, setGrid] = useState<Grid>([]);
     const [selectedTile, setSelectedTile] = useState<{ r: number; c: number } | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [showLevelComplete, setShowLevelComplete] = useState(false);
+    const [result, setResult] = useState<LevelResult | null>(null);
     const [combo, setCombo] = useState(0);
     const [lastMoveScore, setLastMoveScore] = useState(0);
     const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
@@ -97,13 +111,17 @@ export const useGameLogic = () => {
         setCombo(0);
         setSelectedTile(null);
         setIsProcessing(false);
-        setShowLevelComplete(false);
+        setResult(null);
         setLastMoveScore(0);
         setFeedbackMessage(null);
         setBoardId(id => id + 1);
     }, [clearBoardTimers]);
 
     useEffect(() => clearBoardTimers, [clearBoardTimers]);
+
+    useEffect(() => {
+        saveProgress(progress);
+    }, [progress]);
 
     useEffect(() => {
         try {
@@ -461,11 +479,29 @@ export const useGameLogic = () => {
         };
     }, [grid, currentLevel.characters]); // Removed isProcessing and combo from dependencies to prevent loops
 
+    // Clearing a level: settle the result once, then record it and unlock the next level.
+    // Cascades that land after this keep animating behind the dialog but no longer count.
     useEffect(() => {
-        if (score >= currentLevel.targetScore && !showLevelComplete) {
-            setShowLevelComplete(true);
-        }
-    }, [score, currentLevel.targetScore, showLevelComplete]);
+        if (result || score < currentLevel.targetScore) return;
+
+        const bonus = moves * moveBonusFor(currentLevel.targetScore);
+        const total = score + bonus;
+        const stars = starsFor(moves, currentLevel.moves);
+        const previous = progress.best[currentLevel.number];
+        const previousBest = previous?.score ?? 0;
+
+        setResult({ score, movesLeft: moves, bonus, total, stars, previousBest, isNewBest: total > previousBest });
+        setProgress(p => ({
+            unlocked: Math.max(p.unlocked, Math.min(currentLevelIndex + 1, LEVELS.length - 1)),
+            best: {
+                ...p.best,
+                [currentLevel.number]: {
+                    score: Math.max(previousBest, total),
+                    stars: Math.max(previous?.stars ?? 0, stars),
+                },
+            },
+        }));
+    }, [score, moves, result, currentLevel, currentLevelIndex, progress.best]);
 
     const swapTiles = useCallback((r1: number, c1: number, r2: number, c2: number) => {
         const testGrid = grid.map(row => [...row]);
@@ -617,12 +653,17 @@ export const useGameLogic = () => {
         startBoard(currentLevel);
     };
 
+    // Start any unlocked level from the map. Picking the level already loaded deals a fresh
+    // board, since the index doesn't change and the level effect won't fire.
+    const playLevel = (index: number) => {
+        if (index < 0 || index > progress.unlocked) return;
+        if (index === currentLevelIndex) startBoard(currentLevel);
+        else setCurrentLevelIndex(index);
+    };
+
     const resetProgress = () => {
-        try {
-            localStorage.removeItem('brainrot_level');
-        } catch {
-            // Storage unavailable; the state reset below is what actually matters.
-        }
+        clearProgress();
+        setProgress({ unlocked: 0, best: {} });
         // Already on level 1 the index doesn't change and the level effect won't fire,
         // so deal the board here.
         if (currentLevelIndex === 0) startBoard(LEVELS[0]);
@@ -638,7 +679,9 @@ export const useGameLogic = () => {
         handleTileSwipe,
         boardId,
         currentLevel,
-        showLevelComplete,
+        result,
+        progress,
+        playLevel,
         nextLevel,
         restartLevel,
         combo,

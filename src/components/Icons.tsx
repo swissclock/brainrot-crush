@@ -58,3 +58,17 @@ export const TrashIcon = ({ className }: { className?: string }) => (
         <path d="M40 45 L40 75 M50 45 L50 75 M60 45 L60 75" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
     </svg>
 );
+
+export const MapIcon = ({ className }: { className?: string }) => (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+        <path d="M9 4 3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5z" />
+        <path d="M9 4v13.5M15 6.5V20" />
+    </svg>
+);
+
+export const LockIcon = ({ className }: { className?: string }) => (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+        <rect x="5" y="11" width="14" height="10" rx="2.5" />
+        <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </svg>
+);
